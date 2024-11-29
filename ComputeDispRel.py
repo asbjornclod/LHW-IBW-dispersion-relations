@@ -30,6 +30,7 @@ def evaluate_LHW(ne, ni, Te, Ti, B, mi, Zi, k_min, k_max, k_res, dispersion_rela
     k_list = np.linspace(k_max, k_min, k_res)
     omg_list = []
     omg_init = omg_LH_electrostatic(k_max, B, ne, ni, Te, Ti, mi, Zi)
+    print(omg_init/(1e6*2*np.pi))
     for index, k in enumerate(k_list):
         if index == 0:
             omg_guess = omg_init
@@ -58,23 +59,29 @@ def evaluate_IBWs(ne, ni, Te, Ti, B, mi, Zi, k_min, k_max, k_res, N_min, N_max, 
     omgci = Zi*c.e*B/mi
     omgLH = omg_LH(B, ne, ni, mi, Zi)
     LH_harmonic = np.floor(omgLH/omgci)
+    print('Lower hybrid branch is at the {}th ion cyclotron harmonic'.format(LH_harmonic))
     for id, harmonic in enumerate(harmonics):
         omg_list_n = np.array([])
         for index, k in enumerate(k_list):
-            if index > 2:
+            if index > 3:
                 if harmonic != LH_harmonic:
                     if np.abs((omg_list_n[-1]-omg_list_n[-2])/(harmonic*omgci)) > 0.01:
                         if harmonic > LH_harmonic:
                             omg_list_n= np.append(omg_list_n[:-4],np.ones(len(k_list)-index+4)*(harmonic)*omgci)
                         else:
+
                             omg_list_n= np.append(omg_list_n[:-4],np.ones(len(k_list)-index+4)*(harmonic+1)*omgci)
                         break
+                    if harmonic < LH_harmonic:
+                        if np.abs(omg_list_n[-1] - (harmonic+1)*omgci) < 0.001*omgci:
+                            omg_list_n= np.append(omg_list_n[:-4],np.ones(len(k_list)-index+4)*(harmonic+1)*omgci)
+                            break
                 if id != 0:
                     if omg_list_n[-1] > omg_2d_array[id-1, index]:
-                        omg_list_n= np.append(omg_list_n[:-2],np.ones(len(k_list)-index+2)*(harmonic+1)*omgci)
+                        omg_list_n= np.append(omg_list_n[:-4],np.ones(len(k_list)-index+4)*(harmonic)*omgci)
                         break
             if index == 0:
-                omg_guess = harmonic*omgci*1.02
+                omg_guess = harmonic*omgci*1.01
             else:
                 omg_guess = omg_list_n[index - 1]
             if dispersion_relation == 'D_IBW':
